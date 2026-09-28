@@ -1,30 +1,109 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05070b">
 <title>Find Your Show Vibe</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f6f8;color:#101828}button{font:inherit}
-.wrap{max-width:980px;margin:auto;padding:34px 20px 70px}.brand{font-weight:900;letter-spacing:-.5px;font-size:18px;margin-bottom:55px}
-.hero{max-width:720px;margin-bottom:35px}.eyebrow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#667085}
-h1{font-size:clamp(42px,7vw,78px);line-height:.95;letter-spacing:-4px;margin:10px 0 18px}h2{font-size:30px;letter-spacing:-1px;margin:7px 0}p{color:#667085;line-height:1.55}
-.card{background:#fff;border:1px solid #e4e7ec;border-radius:20px;padding:25px;margin:16px 0;box-shadow:0 5px 20px rgba(16,24,40,.04)}
-.pills{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}.pill{border:1px solid #d0d5dd;background:white;border-radius:999px;padding:11px 16px;font-weight:750;cursor:pointer;transition:.15s}.pill:hover{transform:translateY(-1px);border-color:#98a2b3}.pill.active{background:#101828;color:white;border-color:#101828}
-.vibes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.vibe{min-height:76px;border:1px solid #d0d5dd;background:white;border-radius:14px;padding:12px;font-weight:850;cursor:pointer;text-align:left}.vibe.active{background:#101828;color:#fff;border-color:#101828}
-.action{border:0;background:#101828;color:#fff;border-radius:999px;padding:14px 22px;font-weight:850;cursor:pointer;margin-top:18px}.action:disabled{opacity:.35;cursor:not-allowed}
-.status{font-size:13px;margin-top:10px;color:#667085}.hidden{display:none}
-.resultHero{background:#101828;color:white;border-radius:22px;padding:28px;margin:25px 0}.resultHero p{color:#d0d5dd}.resultHero h2{font-size:42px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.show{background:white;border:1px solid #e4e7ec;border-radius:18px;padding:20px;display:flex;flex-direction:column;min-height:230px}.score{font-size:12px;font-weight:900;color:#667085}.show h3{font-size:22px;margin:12px 0 6px}.meta{font-size:13px;color:#667085;line-height:1.5}.why{font-size:12px;color:#667085;margin:14px 0;line-height:1.5}.ticket{margin-top:auto;display:inline-block;text-decoration:none;color:#101828;font-weight:900}.again{background:none;border:0;text-decoration:underline;cursor:pointer;color:#667085;margin-top:20px}
-.loading{padding:40px;text-align:center;color:#667085}
-@media(max-width:700px){.wrap{padding:25px 15px 50px}.brand{margin-bottom:35px}h1{letter-spacing:-2.5px}.vibes{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.resultHero h2{font-size:34px}}
-</style></head><body><main class="wrap">
-<div class="brand">O2 ACADEMY VENUES</div>
-<section id="quiz">
-<div class="hero"><div class="eyebrow">Find your next gig</div><h1>What are you in the mood for?</h1><p>Tell us where you want to go and the kind of night you're feeling. We'll find upcoming shows that match.</p></div>
-<div class="card"><div class="eyebrow">Step 1</div><h2>Where do you want to go out?</h2><p>Choose one city, a few, or go anywhere.</p><div id="cities" class="pills"><span>Loading cities…</span></div></div>
-<div class="card"><div class="eyebrow">Step 2</div><h2>Pick your vibe</h2><p>Choose 3–5 words. Don't overthink it.</p><div id="vibes" class="vibes"></div><div id="count" class="status"></div><button id="go" class="action" disabled>Find my shows →</button></div>
-</section>
-<section id="results" class="hidden"></section>
+*{box-sizing:border-box}
+:root{--ink:#05070b;--paper:#f6f6f2;--white:#fff;--blue:#4e63ff;--electric:#6878ff;--line:rgba(255,255,255,.16);--muted:#aeb4c1}
+html{background:var(--ink)}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--ink);color:var(--white);min-height:100vh;-webkit-font-smoothing:antialiased}
+button,a{font:inherit}
+button{-webkit-tap-highlight-color:transparent}
+.app{min-height:100vh;max-width:760px;margin:0 auto;position:relative;overflow:hidden;background:
+radial-gradient(circle at 88% 2%,rgba(78,99,255,.38),transparent 31rem),
+radial-gradient(circle at 0% 82%,rgba(78,99,255,.15),transparent 25rem),
+var(--ink)}
+.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:relative;z-index:3}
+.brand{font-size:15px;font-weight:900;letter-spacing:.08em}
+.brand span{opacity:.58;font-weight:700}
+.stepDots{display:flex;gap:6px;align-items:center}
+.stepDots span{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.25);transition:.2s}
+.stepDots span.active{width:22px;background:#fff}
+.screen{display:none;min-height:calc(100vh - 76px);padding:32px 22px max(34px,env(safe-area-inset-bottom));animation:fade .28s ease}
+.screen.active{display:flex;flex-direction:column}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.eyebrow{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#9ca8ff}
+h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:10px 0 18px;max-width:650px}
+.lead{font-size:17px;line-height:1.45;color:#c3c7d0;margin:0 0 30px;max-width:560px}
+.selector{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.pill{border:1px solid rgba(255,255,255,.19);background:rgba(255,255,255,.07);color:#fff;border-radius:999px;padding:13px 17px;font-weight:800;cursor:pointer;transition:.15s}
+.pill:hover{background:rgba(255,255,255,.12)}
+.pill.active{background:#fff;color:var(--ink);border-color:#fff}
+.bottomAction{margin-top:auto;padding-top:32px;position:sticky;bottom:0;background:linear-gradient(transparent,var(--ink) 28%)}
+.action{width:100%;min-height:58px;border:0;border-radius:999px;background:#fff;color:var(--ink);font-weight:950;letter-spacing:.03em;cursor:pointer;box-shadow:0 10px 34px rgba(0,0,0,.25)}
+.action:disabled{opacity:.28;cursor:not-allowed}
+.helper{text-align:center;color:#8e95a3;font-size:12px;margin:12px 0 0}
+.back{border:0;background:none;color:#fff;padding:0;margin-bottom:28px;font-weight:800;cursor:pointer;text-align:left}
+.vibes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vibe{min-height:86px;border:1px solid rgba(255,255,255,.17);background:rgba(255,255,255,.06);color:#fff;border-radius:18px;padding:16px;font-size:16px;font-weight:900;cursor:pointer;text-align:left;display:flex;align-items:flex-end;transition:.15s}
+.vibe.active{background:#fff;color:var(--ink);border-color:#fff;transform:translateY(-1px)}
+.status{font-size:12px;color:#aeb4c1;margin-top:14px}
+.hidden{display:none!important}
+#results{min-height:100vh;padding:22px 18px 42px;background:var(--paper);color:var(--ink)}
+.resultTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.resultTop .stepDots span{background:#c7c9ce} .resultTop .stepDots span.active{background:var(--ink)}
+.backLink{border:0;background:none;padding:0;font-weight:850;cursor:pointer}
+.resultHero{background:var(--ink);color:#fff;border-radius:28px;padding:28px 24px;margin-bottom:28px;box-shadow:0 18px 50px rgba(0,0,0,.12);position:relative;overflow:hidden}
+.resultHero:after{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:var(--blue);filter:blur(1px);right:-120px;top:-100px;opacity:.75}
+.resultHero h2{font-size:clamp(42px,12vw,68px);line-height:.91;letter-spacing:-.06em;margin:10px 0 16px;max-width:560px;position:relative;z-index:1}
+.resultHero p{color:#c9ccd5;margin:0 0 20px;line-height:1.5;position:relative;z-index:1}
+.locationTag{display:inline-flex;padding:9px 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;font-size:12px;font-weight:800;position:relative;z-index:1}
+.resultsIntro{display:flex;align-items:end;justify-content:space-between;margin:0 4px 15px}
+.resultsIntro h3{font-size:26px;letter-spacing:-.04em;margin:5px 0 0}
+.resultsIntro span{font-size:12px;font-weight:800;color:#777d88}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+.show{background:#fff;border:1px solid #e5e5e1;border-radius:22px;padding:20px;min-height:200px;display:flex;flex-direction:column;box-shadow:0 4px 18px rgba(0,0,0,.035)}
+.showTop{display:flex;justify-content:space-between;align-items:center}
+.score{font-size:10px;font-weight:950;letter-spacing:.08em;background:#eef0ff;color:#3447d9;padding:7px 9px;border-radius:999px}
+.date{font-size:12px;font-weight:850;color:#747983}
+.show h3{font-size:28px;line-height:1;letter-spacing:-.045em;margin:25px 0 7px}
+.meta{font-size:13px;color:#747983;font-weight:700}
+.why{font-size:11px;color:#8a8e96;margin:12px 0 18px;text-transform:uppercase;letter-spacing:.06em}
+.ticket{margin-top:auto;display:flex;align-items:center;justify-content:space-between;background:var(--ink);color:#fff;text-decoration:none;border-radius:999px;padding:14px 16px;font-size:12px;font-weight:950;letter-spacing:.05em}
+.again{display:block;width:100%;margin:22px 0 0;border:0;background:none;text-decoration:underline;font-weight:850;cursor:pointer}
+.empty{background:#fff;border-radius:20px;padding:24px;line-height:1.5}
+@media(min-width:620px){.topbar{padding-left:34px;padding-right:34px}.screen{padding:52px 34px 44px}.vibes{grid-template-columns:repeat(3,1fr)}#results{padding:30px 28px 50px}.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main class="app">
+  <div id="quiz">
+    <header class="topbar">
+      <div class="brand">O2 <span>ACADEMY VENUES</span></div>
+      <div class="stepDots" aria-label="Quiz progress"><span class="active"></span><span></span><span></span></div>
+    </header>
+
+    <section id="cityScreen" class="screen active">
+      <div class="eyebrow">Step 01 · Location</div>
+      <h1>Where's your next night out?</h1>
+      <p class="lead">Pick one city, a few, or choose anywhere. We'll only show you gigs that make sense for you.</p>
+      <div id="cities" class="selector"><span>Loading cities…</span></div>
+      <div class="bottomAction">
+        <button id="cityNext" class="action">NEXT →</button>
+        <p class="helper">You can change this later</p>
+      </div>
+    </section>
+
+    <section id="vibeScreen" class="screen">
+      <button id="backToCities" class="back">← Back</button>
+      <div class="eyebrow">Step 02 · Mood</div>
+      <h1>What's your vibe?</h1>
+      <p class="lead">Choose 3–5. Don't overthink it — go with whatever sounds like your kind of night.</p>
+      <div id="vibes" class="vibes"></div>
+      <div id="count" class="status">0 of 3–5 selected</div>
+      <div class="bottomAction">
+        <button id="go" class="action" disabled>FIND MY SHOWS →</button>
+      </div>
+    </section>
+  </div>
+
+  <section id="results" class="hidden"></section>
 </main>
 <script>
+
 const SB="https://jiigtmxfepthdeorlnmv.supabase.co", KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
 let shows=[], selectedCities=new Set(["Anywhere"]), selected=new Set();
 const map={"Loud":["rock","punk","metal","alternative"],"Dreamy":["indie","shoegaze","alternative","pop"],"Chaotic":["punk","hardcore","metal","experimental"],"Nostalgic":["pop","rock","soul","indie"],"Intimate":["acoustic","folk","soul","indie"],"Euphoric":["pop","dance","electronic","house"],"Dark":["alternative","metal","electronic","r&b"],"Feel-good":["pop","funk","soul","dance"],"Discovery":["indie","alternative","experimental","folk"],"Singalong":["pop","rock","indie","punk"],"Dancey":["dance","electronic","house","pop"],"Chilled":["acoustic","soul","r&b","folk"],"High-energy":["rock","punk","dance","metal"],"Emotional":["indie","acoustic","soul","r&b"],"Weird":["experimental","alternative","electronic","indie"],"Romantic":["r&b","soul","pop","acoustic"]};
@@ -39,7 +118,7 @@ function render(){
  let cs=[...new Set(shows.map(x=>x.city).filter(Boolean))].sort();
  cities.innerHTML=["Anywhere",...cs].map(c=>`<button class="pill ${selectedCities.has(c)?"active":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
  vibes.innerHTML=Object.keys(map).map(v=>`<button class="vibe ${selected.has(v)?"active":""}" data-v="${esc(v)}">${esc(v)}</button>`).join("");
- count.textContent=`${selected.size} of 3–5 selected`;go.disabled=selected.size<3;
+ count.textContent=`${selected.size} of 3–5 selected`;go.disabled=selected.size<3;cityNext.disabled=!selectedCities.size;
  cities.querySelectorAll("button").forEach(b=>b.onclick=()=>{let c=b.dataset.c;if(c==="Anywhere")selectedCities=new Set(["Anywhere"]);else{selectedCities.delete("Anywhere");selectedCities.has(c)?selectedCities.delete(c):selectedCities.add(c);if(!selectedCities.size)selectedCities.add("Anywhere")}render()});
  vibes.querySelectorAll("button").forEach(b=>b.onclick=()=>{let v=b.dataset.v;if(selected.has(v))selected.delete(v);else if(selected.size<5)selected.add(v);render()});
 }
@@ -48,8 +127,42 @@ function findShows(){
  let any=selectedCities.has("Anywhere");
  let ranked=shows.filter(s=>any||selectedCities.has(s.city)).map(s=>{let g=(s.genre||"").toLowerCase(),reasons=[];selected.forEach(v=>{if(map[v].some(k=>g.includes(k)))reasons.push(v)});return{s,score:reasons.length,reasons}}).filter(x=>x.score).sort((a,b)=>b.score-a.score||a.s.event_date.localeCompare(b.s.event_date)).slice(0,6);
  quiz.classList.add("hidden");results.classList.remove("hidden");
- results.innerHTML=`<div class="resultHero"><div class="eyebrow">Your vibe is giving…</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))} · ${esc(any?"Anywhere":[...selectedCities].join(", "))}</p></div><div class="grid">${ranked.map(x=>`<article class="show"><div class="score">${x.score}/${selected.size} VIBE MATCH</div><h3>${esc(x.s.artist)}</h3><div class="meta">${esc(x.s.city)} · ${new Date(x.s.event_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div><div class="why">Matched: ${esc(x.reasons.join(" · "))}<br>${esc(x.s.genre||"")}</div>${x.s.ticket_url?`<a class="ticket" target="_blank" rel="noopener" href="${esc(x.s.ticket_url)}">Find tickets →</a>`:""}</article>`).join("")||"<div class='card'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="results.classList.add('hidden');quiz.classList.remove('hidden');scrollTo(0,0)">← Try another vibe</button>`;
+ results.innerHTML=`<div class="resultTop"><button class="backLink" onclick="restartQuiz()">← Start again</button><div class="stepDots"><span></span><span></span><span class="active"></span></div></div><div class="resultHero"><div class="eyebrow">Your show vibe</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))}</p><div class="locationTag">📍 ${esc(any?"Anywhere":[...selectedCities].join(", "))}</div></div><div class="resultsIntro"><div><div class="eyebrow">Your matches</div><h3>Shows we think you'll love</h3></div><span>${ranked.length} picks</span></div><div class="grid">${ranked.map(x=>`<article class="show"><div class="showTop"><span class="score">${x.score}/${selected.size} MATCH</span><span class="date">${new Date(x.s.event_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></div><h3>${esc(x.s.artist)}</h3><div class="meta">${esc(x.s.city)}</div><div class="why">${esc(x.reasons.join(" · "))}</div>${x.s.ticket_url?`<a class="ticket" target="_blank" rel="noopener" href="${esc(x.s.ticket_url)}">GET TICKETS <span>→</span></a>`:""}</article>`).join("")||"<div class='empty'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="restartQuiz()">START AGAIN</button>`;
  scrollTo({top:0,behavior:"smooth"});
 }
-go.onclick=findShows;load();
-</script></body></html>
+
+
+
+const cityScreen=document.getElementById("cityScreen");
+const vibeScreen=document.getElementById("vibeScreen");
+const cityNext=document.getElementById("cityNext");
+const backToCities=document.getElementById("backToCities");
+
+function setStep(step){
+  document.querySelectorAll(".topbar .stepDots span").forEach((d,i)=>d.classList.toggle("active",i===step));
+}
+cityNext.onclick=()=>{
+  cityScreen.classList.remove("active");
+  vibeScreen.classList.add("active");
+  setStep(1);
+  window.scrollTo(0,0);
+};
+backToCities.onclick=()=>{
+  vibeScreen.classList.remove("active");
+  cityScreen.classList.add("active");
+  setStep(0);
+  window.scrollTo(0,0);
+};
+go.onclick=findShows;
+function restartQuiz(){
+  results.classList.add("hidden");
+  quiz.classList.remove("hidden");
+  vibeScreen.classList.remove("active");
+  cityScreen.classList.add("active");
+  setStep(0);
+  window.scrollTo(0,0);
+}
+load();
+</script>
+</body>
+</html>
