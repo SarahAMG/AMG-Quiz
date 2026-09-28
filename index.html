@@ -110,7 +110,7 @@ h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:
       <div id="cities" class="selector"><span>Loading cities…</span></div>
       <div class="bottomAction">
         <button id="cityNext" class="action">NEXT →</button>
-        <p class="helper">You can change this later</p>
+        <p class="helper">Fresh vibes every week · You can change this later</p>
       </div>
     </section>
 
@@ -162,8 +162,24 @@ go.onclick=findShows;
 
 const SB="https://jiigtmxfepthdeorlnmv.supabase.co", KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
 let shows=[], selectedCities=new Set(["Anywhere"]), selected=new Set();
-const map={"Loud":["rock","punk","metal","alternative"],"Dreamy":["indie","shoegaze","alternative","pop"],"Chaotic":["punk","hardcore","metal","experimental"],"Nostalgic":["pop","rock","soul","indie"],"Intimate":["acoustic","folk","soul","indie"],"Euphoric":["pop","dance","electronic","house"],"Dark":["alternative","metal","electronic","r&b"],"Feel-good":["pop","funk","soul","dance"],"Discovery":["indie","alternative","experimental","folk"],"Singalong":["pop","rock","indie","punk"],"Dancey":["dance","electronic","house","pop"],"Chilled":["acoustic","soul","r&b","folk"],"High-energy":["rock","punk","dance","metal"],"Emotional":["indie","acoustic","soul","r&b"],"Weird":["experimental","alternative","electronic","indie"],"Romantic":["r&b","soul","pop","acoustic"]};
+const WEEKLY_SETS=[
+{q:"What kind of night are we having?",sub:"Pick 3–5. Go with whatever sounds like your kind of night.",v:{"Sweaty":["rock","punk","metal","hardcore"],"Euphoric":["pop","dance","electronic","house"],"Main character":["pop","indie","r&b","soul"],"Big singalong":["pop","rock","indie","punk"],"Late night":["r&b","electronic","house","techno"],"Feel-good":["pop","funk","soul","reggae"],"Something new":["indie","alternative","experimental","folk"],"Beautiful chaos":["punk","rock","metal","alternative"],"Dreamy":["shoegaze","indie","alternative","pop"],"Emotional":["soul","acoustic","emo","r&b"]},r:["Main Character Energy","Beautifully Unhinged","One More Song","No Skips, Just Bangers","After Dark Energy"]},
+{q:"Pick your current energy.",sub:"Choose 3–5. No sensible answers required.",v:{"Soft":["acoustic","folk","soul","indie"],"Unhinged":["punk","metal","hardcore","rock"],"Nostalgic":["rock","pop","punk","indie"],"Loud":["rock","metal","punk","hardcore"],"Dreamy":["shoegaze","indie","alternative","pop"],"Dark":["alternative","r&b","electronic","metal"],"Dancey":["dance","electronic","house","techno"],"Emotional":["soul","emo","acoustic","r&b"],"Cute chaos":["pop","indie","alternative"],"Discovery mode":["indie","experimental","alternative","folk"]},r:["Emotional Support Gig","Headphones On, World Off","Dancefloor Until Further Notice","Certified Gig Rat","Soft Launch Sunday"]},
+{q:"How do you want the gig to feel?",sub:"Pick 3–5. We'll turn the mood into actual shows near you.",v:{"I need to scream":["rock","punk","metal","hardcore"],"Cute but chaotic":["pop","indie","alternative"],"Hands in the air":["dance","pop","electronic","house"],"In my feelings":["r&b","soul","acoustic","emo"],"Sweaty venue":["rock","punk","indie","metal"],"Chill but not boring":["soul","folk","acoustic","jazz"],"Bass please":["electronic","garage","drum and bass","hip hop"],"Take me back":["pop","rock","punk","indie"],"I knew them first":["indie","alternative","experimental","folk"],"Romanticise my life":["indie","soul","r&b","acoustic"]},r:["Slightly Unhinged Mosh Pit","I Knew Them Before They Were Big","Romanticise Everything","Front Row Behaviour","This Is Your Night"]},
+{q:"Build your perfect night out.",sub:"Choose 3–5 ingredients. We'll bring the shows.",v:{"Guitars":["rock","indie","punk","metal"],"Big vocals":["pop","soul","r&b","rock"],"Tiny venue energy":["indie","punk","alternative","folk"],"Dancefloor":["dance","electronic","house","techno"],"Throwback":["pop","rock","punk","indie"],"New obsession":["indie","alternative","experimental"],"Heartbreak":["soul","r&b","acoustic","emo"],"Mosh pit":["punk","metal","hardcore","rock"],"Good vibes only":["pop","funk","reggae","soul"],"After hours":["r&b","electronic","house","garage"]},r:["New Favourite Unlocked","No Voice Tomorrow","After Hours Only","Good Decisions Optional","The Group Chat Approved"]},
+{q:"What are you craving this week?",sub:"Choose 3–5 and trust the algorithm.",v:{"A proper bop":["pop","dance","funk"],"Something weird":["experimental","alternative","electronic"],"A good cry":["soul","acoustic","emo","r&b"],"Pure noise":["metal","punk","hardcore","rock"],"Summer energy":["pop","reggae","dance","indie"],"Moody":["r&b","alternative","electronic"],"Guitar obsession":["rock","indie","punk"],"Hidden gem":["indie","folk","experimental"],"Full send":["dance","rock","punk","electronic"],"Sing every word":["pop","rock","indie","soul"]},r:["No Skips, Just Bangers","Hidden Gem Hunter","Full Send Energy","In My Feelings","Your New Personality"]},
+{q:"Pick the energy you're bringing.",sub:"Choose 3–5. We'll find the artists that match it.",v:{"Friday feeling":["pop","dance","electronic","indie"],"Zero chill":["punk","metal","hardcore","rock"],"Low-key":["acoustic","folk","soul","indie"],"Big night":["pop","dance","rock","electronic"],"Underground":["alternative","experimental","techno","indie"],"Nostalgia hit":["pop","rock","punk"],"Slow burn":["r&b","soul","acoustic"],"Crowd surfer":["punk","rock","metal","hardcore"],"New music brain":["indie","alternative","folk","experimental"],"Lose track of time":["house","techno","electronic","garage"]},r:["Weekend Loading","Crowd Surfer Energy","The Late One","New Music Brain","See You Down The Front"]}
+];
+function isoWeek(){const d=new Date(),x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));x.setUTCDate(x.getUTCDate()+4-(x.getUTCDay()||7));return Math.ceil((((x-new Date(Date.UTC(x.getUTCFullYear(),0,1)))/86400000)+1)/7)}
+const weeklySet=WEEKLY_SETS[(isoWeek()-1)%WEEKLY_SETS.length];
+const map=weeklySet.v;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const vibeHeading=document.querySelector("#vibeScreen h1");
+const vibeLead=document.querySelector("#vibeScreen .lead");
+if(vibeHeading)vibeHeading.textContent=weeklySet.q;
+if(vibeLead)vibeLead.textContent=weeklySet.sub;
+
 async function load(){
  try{
   let all=[],from=0;
@@ -178,7 +194,7 @@ function render(){
  cities.querySelectorAll("button").forEach(b=>b.onclick=()=>{let c=b.dataset.c;if(c==="Anywhere")selectedCities=new Set(["Anywhere"]);else{selectedCities.delete("Anywhere");selectedCities.has(c)?selectedCities.delete(c):selectedCities.add(c);if(!selectedCities.size)selectedCities.add("Anywhere")}render()});
  vibes.querySelectorAll("button").forEach(b=>b.onclick=()=>{let v=b.dataset.v;if(selected.has(v))selected.delete(v);else if(selected.size<5)selected.add(v);render()});
 }
-function title(){if(selected.has("Chaotic")||selected.has("Loud"))return"Beautifully Unhinged";if(selected.has("Dreamy")&&selected.has("Emotional"))return"Headphones On, World Off";if(selected.has("Dancey")||selected.has("Euphoric"))return"Main Character After Dark";if(selected.has("Discovery")||selected.has("Weird"))return"I Knew Them Before They Were Big";if(selected.has("Nostalgic")||selected.has("Singalong"))return"No Skips, Just Bangers";if(selected.has("Intimate")||selected.has("Chilled"))return"Soft Launch Sunday";return"Your Current Music Mood"}
+function title(){const n=weeklySet.r;const sig=[...selected].join("|").split("").reduce((a,c)=>a+c.charCodeAt(0),0);return n[sig%n.length]}
 
 let currentAudio=null,currentPlayButton=null;
 function normArtist(v){return (v||"").toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g," ").trim()}
@@ -199,13 +215,19 @@ async function getArtistPhoto(artist){
 }
 async function getArtistPreview(artist){
   try{
-    const url=`https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&country=gb&media=music&entity=song&limit=12`;
+    const url=`https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&country=gb&media=music&entity=song&attribute=artistTerm&limit=50`;
     const res=await fetch(url);
     if(!res.ok) return null;
     const data=await res.json();
     const matches=(data.results||[]).filter(x=>x.previewUrl&&artistLooksRight(artist,x.artistName));
     if(!matches.length)return null;
-    return matches[0];
+
+    // Apple's Search API does not expose a universal "artist top song" metric.
+    // Keep Apple's catalogue relevance order, but prefer standard song releases
+    // over obvious video/karaoke/remix/tribute/noise matches.
+    const bad=/karaoke|tribute|made famous by|instrumental version|cover version|remix|sped up|slowed|live at|commentary/i;
+    const clean=matches.filter(x=>!bad.test(`${x.trackName||""} ${x.collectionName||""}`));
+    return (clean.length?clean:matches)[0];
   }catch(e){return null}
 }
 function togglePreview(btn,url){
@@ -231,7 +253,7 @@ async function hydratePreviews(){
     const photo=await getArtistPhoto(artist);
     if(art && photo){art.src=photo;art.classList.add("showArt");}
     slot.className="listenBox";
-    slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><div class="trackInfo"><div class="trackLabel">Listen first</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
+    slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><div class="trackInfo"><div class="trackLabel">Top track · Listen</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
     slot.querySelector(".playBtn").onclick=()=>togglePreview(slot.querySelector(".playBtn"),track.previewUrl);
   }
 }
