@@ -131,6 +131,35 @@ h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:
 </main>
 <script>
 
+
+const quiz=document.getElementById("quiz");
+const results=document.getElementById("results");
+const cityScreen=document.getElementById("cityScreen");
+const vibeScreen=document.getElementById("vibeScreen");
+const cityNext=document.getElementById("cityNext");
+const backToCities=document.getElementById("backToCities");
+const cities=document.getElementById("cities");
+const vibes=document.getElementById("vibes");
+const count=document.getElementById("count");
+const go=document.getElementById("go");
+
+function setStep(step){
+  document.querySelectorAll(".topbar .stepDots span").forEach((d,i)=>d.classList.toggle("active",i===step));
+}
+cityNext.onclick=()=>{
+  cityScreen.classList.remove("active");
+  vibeScreen.classList.add("active");
+  setStep(1);
+  window.scrollTo(0,0);
+};
+backToCities.onclick=()=>{
+  vibeScreen.classList.remove("active");
+  cityScreen.classList.add("active");
+  setStep(0);
+  window.scrollTo(0,0);
+};
+go.onclick=findShows;
+
 const SB="https://jiigtmxfepthdeorlnmv.supabase.co", KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
 let shows=[], selectedCities=new Set(["Anywhere"]), selected=new Set();
 const map={"Loud":["rock","punk","metal","alternative"],"Dreamy":["indie","shoegaze","alternative","pop"],"Chaotic":["punk","hardcore","metal","experimental"],"Nostalgic":["pop","rock","soul","indie"],"Intimate":["acoustic","folk","soul","indie"],"Euphoric":["pop","dance","electronic","house"],"Dark":["alternative","metal","electronic","r&b"],"Feel-good":["pop","funk","soul","dance"],"Discovery":["indie","alternative","experimental","folk"],"Singalong":["pop","rock","indie","punk"],"Dancey":["dance","electronic","house","pop"],"Chilled":["acoustic","soul","r&b","folk"],"High-energy":["rock","punk","dance","metal"],"Emotional":["indie","acoustic","soul","r&b"],"Weird":["experimental","alternative","electronic","indie"],"Romantic":["r&b","soul","pop","acoustic"]};
