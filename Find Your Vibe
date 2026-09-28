@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Find Your Show Vibe</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f6f8;color:#101828}button{font:inherit}
+.wrap{max-width:980px;margin:auto;padding:34px 20px 70px}.brand{font-weight:900;letter-spacing:-.5px;font-size:18px;margin-bottom:55px}
+.hero{max-width:720px;margin-bottom:35px}.eyebrow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#667085}
+h1{font-size:clamp(42px,7vw,78px);line-height:.95;letter-spacing:-4px;margin:10px 0 18px}h2{font-size:30px;letter-spacing:-1px;margin:7px 0}p{color:#667085;line-height:1.55}
+.card{background:#fff;border:1px solid #e4e7ec;border-radius:20px;padding:25px;margin:16px 0;box-shadow:0 5px 20px rgba(16,24,40,.04)}
+.pills{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}.pill{border:1px solid #d0d5dd;background:white;border-radius:999px;padding:11px 16px;font-weight:750;cursor:pointer;transition:.15s}.pill:hover{transform:translateY(-1px);border-color:#98a2b3}.pill.active{background:#101828;color:white;border-color:#101828}
+.vibes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.vibe{min-height:76px;border:1px solid #d0d5dd;background:white;border-radius:14px;padding:12px;font-weight:850;cursor:pointer;text-align:left}.vibe.active{background:#101828;color:#fff;border-color:#101828}
+.action{border:0;background:#101828;color:#fff;border-radius:999px;padding:14px 22px;font-weight:850;cursor:pointer;margin-top:18px}.action:disabled{opacity:.35;cursor:not-allowed}
+.status{font-size:13px;margin-top:10px;color:#667085}.hidden{display:none}
+.resultHero{background:#101828;color:white;border-radius:22px;padding:28px;margin:25px 0}.resultHero p{color:#d0d5dd}.resultHero h2{font-size:42px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.show{background:white;border:1px solid #e4e7ec;border-radius:18px;padding:20px;display:flex;flex-direction:column;min-height:230px}.score{font-size:12px;font-weight:900;color:#667085}.show h3{font-size:22px;margin:12px 0 6px}.meta{font-size:13px;color:#667085;line-height:1.5}.why{font-size:12px;color:#667085;margin:14px 0;line-height:1.5}.ticket{margin-top:auto;display:inline-block;text-decoration:none;color:#101828;font-weight:900}.again{background:none;border:0;text-decoration:underline;cursor:pointer;color:#667085;margin-top:20px}
+.loading{padding:40px;text-align:center;color:#667085}
+@media(max-width:700px){.wrap{padding:25px 15px 50px}.brand{margin-bottom:35px}h1{letter-spacing:-2.5px}.vibes{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.resultHero h2{font-size:34px}}
+</style></head><body><main class="wrap">
+<div class="brand">O2 ACADEMY VENUES</div>
+<section id="quiz">
+<div class="hero"><div class="eyebrow">Find your next gig</div><h1>What are you in the mood for?</h1><p>Tell us where you want to go and the kind of night you're feeling. We'll find upcoming shows that match.</p></div>
+<div class="card"><div class="eyebrow">Step 1</div><h2>Where do you want to go out?</h2><p>Choose one city, a few, or go anywhere.</p><div id="cities" class="pills"><span>Loading cities…</span></div></div>
+<div class="card"><div class="eyebrow">Step 2</div><h2>Pick your vibe</h2><p>Choose 3–5 words. Don't overthink it.</p><div id="vibes" class="vibes"></div><div id="count" class="status"></div><button id="go" class="action" disabled>Find my shows →</button></div>
+</section>
+<section id="results" class="hidden"></section>
+</main>
+<script>
+const SB="https://jiigtmxfepthdeorlnmv.supabase.co", KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
+let shows=[], selectedCities=new Set(["Anywhere"]), selected=new Set();
+const map={"Loud":["rock","punk","metal","alternative"],"Dreamy":["indie","shoegaze","alternative","pop"],"Chaotic":["punk","hardcore","metal","experimental"],"Nostalgic":["pop","rock","soul","indie"],"Intimate":["acoustic","folk","soul","indie"],"Euphoric":["pop","dance","electronic","house"],"Dark":["alternative","metal","electronic","r&b"],"Feel-good":["pop","funk","soul","dance"],"Discovery":["indie","alternative","experimental","folk"],"Singalong":["pop","rock","indie","punk"],"Dancey":["dance","electronic","house","pop"],"Chilled":["acoustic","soul","r&b","folk"],"High-energy":["rock","punk","dance","metal"],"Emotional":["indie","acoustic","soul","r&b"],"Weird":["experimental","alternative","electronic","indie"],"Romantic":["r&b","soul","pop","acoustic"]};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function load(){
+ try{
+  let all=[],from=0;
+  while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,ticket_url,venue_id&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all;render()
+ }catch(e){cities.innerHTML="<span>We couldn't load shows right now. Please try again shortly.</span>"}
+}
+function render(){
+ let cs=[...new Set(shows.map(x=>x.city).filter(Boolean))].sort();
+ cities.innerHTML=["Anywhere",...cs].map(c=>`<button class="pill ${selectedCities.has(c)?"active":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+ vibes.innerHTML=Object.keys(map).map(v=>`<button class="vibe ${selected.has(v)?"active":""}" data-v="${esc(v)}">${esc(v)}</button>`).join("");
+ count.textContent=`${selected.size} of 3–5 selected`;go.disabled=selected.size<3;
+ cities.querySelectorAll("button").forEach(b=>b.onclick=()=>{let c=b.dataset.c;if(c==="Anywhere")selectedCities=new Set(["Anywhere"]);else{selectedCities.delete("Anywhere");selectedCities.has(c)?selectedCities.delete(c):selectedCities.add(c);if(!selectedCities.size)selectedCities.add("Anywhere")}render()});
+ vibes.querySelectorAll("button").forEach(b=>b.onclick=()=>{let v=b.dataset.v;if(selected.has(v))selected.delete(v);else if(selected.size<5)selected.add(v);render()});
+}
+function title(){if(selected.has("Chaotic")||selected.has("Loud"))return"Beautifully Unhinged";if(selected.has("Dreamy")&&selected.has("Emotional"))return"Headphones On, World Off";if(selected.has("Dancey")||selected.has("Euphoric"))return"Main Character After Dark";if(selected.has("Discovery")||selected.has("Weird"))return"I Knew Them Before They Were Big";if(selected.has("Nostalgic")||selected.has("Singalong"))return"No Skips, Just Bangers";if(selected.has("Intimate")||selected.has("Chilled"))return"Soft Launch Sunday";return"Your Current Music Mood"}
+function findShows(){
+ let any=selectedCities.has("Anywhere");
+ let ranked=shows.filter(s=>any||selectedCities.has(s.city)).map(s=>{let g=(s.genre||"").toLowerCase(),reasons=[];selected.forEach(v=>{if(map[v].some(k=>g.includes(k)))reasons.push(v)});return{s,score:reasons.length,reasons}}).filter(x=>x.score).sort((a,b)=>b.score-a.score||a.s.event_date.localeCompare(b.s.event_date)).slice(0,6);
+ quiz.classList.add("hidden");results.classList.remove("hidden");
+ results.innerHTML=`<div class="resultHero"><div class="eyebrow">Your vibe is giving…</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))} · ${esc(any?"Anywhere":[...selectedCities].join(", "))}</p></div><div class="grid">${ranked.map(x=>`<article class="show"><div class="score">${x.score}/${selected.size} VIBE MATCH</div><h3>${esc(x.s.artist)}</h3><div class="meta">${esc(x.s.city)} · ${new Date(x.s.event_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div><div class="why">Matched: ${esc(x.reasons.join(" · "))}<br>${esc(x.s.genre||"")}</div>${x.s.ticket_url?`<a class="ticket" target="_blank" rel="noopener" href="${esc(x.s.ticket_url)}">Find tickets →</a>`:""}</article>`).join("")||"<div class='card'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="results.classList.add('hidden');quiz.classList.remove('hidden');scrollTo(0,0)">← Try another vibe</button>`;
+ scrollTo({top:0,behavior:"smooth"});
+}
+go.onclick=findShows;load();
+</script></body></html>
