@@ -81,6 +81,10 @@ h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:
 .trackArtist{font-size:10px;color:#777d88;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .listenLoading{font-size:10px;color:#8a8e96;margin:2px 0 14px}
 
+
+.artistArt{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:15px;margin:12px 0 16px;background:#ecebe7;display:none}
+.artistArt.showArt{display:block}
+
 </style>
 </head>
 <body>
@@ -176,6 +180,11 @@ async function hydratePreviews(){
     let track=cache.get(artist);
     if(track===undefined){track=await getArtistPreview(artist);cache.set(artist,track||null)}
     if(!track){slot.remove();continue}
+    const art=document.querySelector(`[data-art-artist="${CSS.escape(artist)}"]`);
+    if(art && track.artworkUrl100){
+      art.src=track.artworkUrl100.replace("100x100bb","600x600bb");
+      art.classList.add("showArt");
+    }
     slot.className="listenBox";
     slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><div class="trackInfo"><div class="trackLabel">Listen first</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
     slot.querySelector(".playBtn").onclick=()=>togglePreview(slot.querySelector(".playBtn"),track.previewUrl);
@@ -186,7 +195,7 @@ function findShows(){
  let any=selectedCities.has("Anywhere");
  let ranked=shows.filter(s=>any||selectedCities.has(s.city)).map(s=>{let g=(s.genre||"").toLowerCase(),reasons=[];selected.forEach(v=>{if(map[v].some(k=>g.includes(k)))reasons.push(v)});return{s,score:reasons.length,reasons}}).filter(x=>x.score).sort((a,b)=>b.score-a.score||a.s.event_date.localeCompare(b.s.event_date)).slice(0,6);
  quiz.classList.add("hidden");results.classList.remove("hidden");
- results.innerHTML=`<div class="resultTop"><button class="backLink" onclick="restartQuiz()">← Start again</button><div class="stepDots"><span></span><span></span><span class="active"></span></div></div><div class="resultHero"><div class="eyebrow">Your show vibe</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))}</p><div class="locationTag">📍 ${esc(any?"Anywhere":[...selectedCities].join(", "))}</div></div><div class="resultsIntro"><div><div class="eyebrow">Your matches</div><h3>Shows we think you'll love</h3></div><span>${ranked.length} picks</span></div><div class="grid">${ranked.map(x=>`<article class="show"><div class="showTop"><span class="score">${x.score}/${selected.size} MATCH</span><span class="date">${new Date(x.s.event_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></div><h3>${esc(x.s.artist)}</h3><div class="meta">${esc(x.s.city)}</div><div class="why">${esc(x.reasons.join(" · "))}</div><div class="listenLoading" data-preview-artist="${esc(x.s.artist)}">Finding a track…</div>${x.s.ticket_url?`<a class="ticket" target="_blank" rel="noopener" href="${esc(x.s.ticket_url)}">GET TICKETS <span>→</span></a>`:""}</article>`).join("")||"<div class='empty'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="restartQuiz()">START AGAIN</button>`;hydratePreviews();
+ results.innerHTML=`<div class="resultTop"><button class="backLink" onclick="restartQuiz()">← Start again</button><div class="stepDots"><span></span><span></span><span class="active"></span></div></div><div class="resultHero"><div class="eyebrow">Your show vibe</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))}</p><div class="locationTag">📍 ${esc(any?"Anywhere":[...selectedCities].join(", "))}</div></div><div class="resultsIntro"><div><div class="eyebrow">Your matches</div><h3>Shows we think you'll love</h3></div><span>${ranked.length} picks</span></div><div class="grid">${ranked.map(x=>`<article class="show"><img class="artistArt" data-art-artist="${esc(x.s.artist)}" alt="${esc(x.s.artist)}"><div class="showTop"><span class="score">${x.score}/${selected.size} MATCH</span><span class="date">${new Date(x.s.event_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></div><h3>${esc(x.s.artist)}</h3><div class="meta">${esc(x.s.city)}</div><div class="why">${esc(x.reasons.join(" · "))}</div><div class="listenLoading" data-preview-artist="${esc(x.s.artist)}">Finding a track…</div>${x.s.ticket_url?`<a class="ticket" target="_blank" rel="noopener" href="${esc(x.s.ticket_url)}">GET TICKETS <span>→</span></a>`:""}</article>`).join("")||"<div class='empty'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="restartQuiz()">START AGAIN</button>`;hydratePreviews();
  scrollTo({top:0,behavior:"smooth"});
 }
 
