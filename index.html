@@ -74,7 +74,14 @@ h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:
 .action:hover,.ticket:hover{filter:brightness(.94)}
 
 .listenBox{margin:2px 0 14px;padding:12px 13px;background:#f3f5fa;border-radius:14px;display:flex;align-items:center;gap:11px}
-.nativePreview{display:none}\n.playBtn{width:38px;height:38px;min-width:38px;border:0;border-radius:50%;background:#0050ff;color:#fff;font-weight:900;cursor:pointer;display:grid;place-items:center}
+.nativePreview{display:none}
+.playBtn{width:46px;height:46px;min-width:46px;border:0;border-radius:50%;background:#0050ff;color:#fff;font-size:15px;font-weight:950;cursor:pointer;display:grid;place-items:center;box-shadow:0 7px 18px rgba(0,80,255,.22);transition:transform .16s ease,box-shadow .16s ease}
+.playBtn:active{transform:scale(.94)}
+.listenBox{position:relative;overflow:hidden;border:1px solid #e2e7f2;background:linear-gradient(135deg,#f7f9ff 0%,#f1f4fb 100%)}
+.listenBox:after{content:"";position:absolute;left:70px;right:14px;bottom:8px;height:2px;border-radius:99px;background:#dfe5f2}
+.trackLabel{font-size:9px;font-weight:950;letter-spacing:.11em;color:#0050ff;text-transform:uppercase;margin-bottom:3px}
+.trackName{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:4px}
+.trackArtist{font-size:10px;color:#777d88;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-bottom:4px}
 .trackInfo{min-width:0;flex:1}
 .trackLabel{font-size:9px;font-weight:950;letter-spacing:.11em;color:#0050ff;text-transform:uppercase;margin-bottom:3px}
 .trackName{font-size:12px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -220,36 +227,54 @@ async function getArtistPhoto(artist){
 }
 async function fetchAppleSongs(term,extra=""){
   try{
-    const url=`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&country=gb&media=music&entity=song&limit=100${extra}`;
+    const url=`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&country=gb&media=music&entity=song&limit=200${extra}`;
     const res=await fetch(url);
     if(!res.ok)return [];
     const data=await res.json();
     return data.results||[];
   }catch(e){return []}
 }
+function simplifiedArtistNames(artist){
+  const vals=[artist];
+  const noBrackets=artist.replace(/\([^)]*\)|\[[^\]]*\]/g," ").replace(/\s+/g," ").trim();
+  const noFeat=noBrackets.replace(/\s+(feat\.?|ft\.?|featuring|with|x)\s+.+$/i,"").trim();
+  const noPunct=noFeat.replace(/[’'“”".,!?:;/\\-]+/g," ").replace(/\s+/g," ").trim();
+  [noBrackets,noFeat,noPunct].forEach(v=>{if(v && !vals.some(x=>normArtist(x)===normArtist(v)))vals.push(v)});
+  return vals;
+}
+function artistMatchScore(query,result){
+  const q=normArtist(query),r=normArtist(result);
+  if(!q||!r)return -999;
+  if(q===r)return 120;
+  const qw=q.split(" ").filter(Boolean),rw=r.split(" ").filter(Boolean);
+  const shared=qw.filter(w=>rw.includes(w));
+  if(q.length>4 && (r.includes(q)||q.includes(r)))return 92;
+  if(shared.length>=2 && shared.length>=Math.min(qw.length,rw.length)*.7)return 78;
+  if(qw.length===1 && rw.includes(qw[0]) && qw[0].length>=5)return 70;
+  return -999;
+}
 function previewCandidateScore(artist,x){
-  if(!x.previewUrl||!artistLooksRight(artist,x.artistName))return -999;
-  const q=normArtist(artist), r=normArtist(x.artistName);
-  let score=q===r?100:70;
+  if(!x.previewUrl)return -999;
+  let score=artistMatchScore(artist,x.artistName);
+  if(score<0)return score;
   const text=`${x.trackName||""} ${x.collectionName||""}`;
-  if(/karaoke|tribute|made famous by|instrumental version|cover version|commentary/i.test(text))score-=80;
-  if(/sped up|slowed|nightcore/i.test(text))score-=45;
-  if(/remix|mix edit|radio edit/i.test(text))score-=18;
-  if(/live at|live from|live version/i.test(text))score-=12;
-  if(x.trackExplicitness==="notExplicit")score+=1;
+  if(/karaoke|tribute|made famous by|instrumental version|cover version|commentary/i.test(text))score-=100;
+  if(/sped up|slowed|nightcore/i.test(text))score-=35;
+  if(/remix|mix edit|radio edit/i.test(text))score-=12;
+  if(/live at|live from|live version/i.test(text))score-=8;
+  if(x.kind==="song")score+=2;
   return score;
 }
 async function getArtistPreview(artist){
   try{
-    // Try several Apple catalogue searches before giving up. This catches
-    // punctuation, featured-artist and catalogue-indexing differences while
-    // still requiring the returned artist name to match the AMG artist.
-    const searches=[
-      [artist,"&attribute=artistTerm"],
-      [artist,""],
-      [`${artist} song`,""],
-      [`${artist} music`,""]
-    ];
+    const names=simplifiedArtistNames(artist);
+    const searches=[];
+    names.forEach(name=>{
+      searches.push([name,"&attribute=artistTerm"]);
+      searches.push([name,""]);
+      searches.push([`${name} music`,""]);
+      searches.push([`${name} song`,""]);
+    });
     const seen=new Map();
     for(const [term,extra] of searches){
       const rows=await fetchAppleSongs(term,extra);
@@ -258,13 +283,11 @@ async function getArtistPreview(artist){
         const key=x.trackId||`${x.artistName}|${x.trackName}|${x.previewUrl}`;
         if(!seen.has(key))seen.set(key,x);
       });
-      const confident=[...seen.values()]
-        .map(x=>({x,score:previewCandidateScore(artist,x)}))
-        .filter(v=>v.score>=60)
-        .sort((a,b)=>b.score-a.score);
-      if(confident.length)return confident[0].x;
+      const confident=[...seen.values()].map(x=>({x,score:previewCandidateScore(artist,x)})).filter(v=>v.score>=65).sort((a,b)=>b.score-a.score);
+      if(confident.length && confident[0].score>=90)return confident[0].x;
     }
-    return null;
+    const final=[...seen.values()].map(x=>({x,score:previewCandidateScore(artist,x)})).filter(v=>v.score>=65).sort((a,b)=>b.score-a.score);
+    return final.length?final[0].x:null;
   }catch(e){return null}
 }
 function togglePreview(btn,audio,externalUrl){
@@ -309,7 +332,7 @@ async function hydratePreviews(){
     }
     if(!track){slot.remove();continue}
     slot.className="listenBox";
-    slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><audio class="nativePreview" preload="none" src="${esc(track.previewUrl)}"></audio><div class="trackInfo"><div class="trackLabel">Top track · Listen</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
+    slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><audio class="nativePreview" preload="none" src="${esc(track.previewUrl)}"></audio><div class="trackInfo"><div class="trackLabel">Listen</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
     const playBtn=slot.querySelector(".playBtn");
     const audio=slot.querySelector(".nativePreview");
     playBtn.onclick=()=>togglePreview(playBtn,audio,track.trackViewUrl||track.collectionViewUrl||"");
