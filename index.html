@@ -74,7 +74,7 @@ h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:
 .action:hover,.ticket:hover{filter:brightness(.94)}
 
 .listenBox{margin:2px 0 14px;padding:12px 13px;background:#f3f5fa;border-radius:14px;display:flex;align-items:center;gap:11px}
-.playBtn{width:38px;height:38px;min-width:38px;border:0;border-radius:50%;background:#0050ff;color:#fff;font-weight:900;cursor:pointer;display:grid;place-items:center}
+.nativePreview{display:none}\n.playBtn{width:38px;height:38px;min-width:38px;border:0;border-radius:50%;background:#0050ff;color:#fff;font-weight:900;cursor:pointer;display:grid;place-items:center}
 .trackInfo{min-width:0;flex:1}
 .trackLabel{font-size:9px;font-weight:950;letter-spacing:.11em;color:#0050ff;text-transform:uppercase;margin-bottom:3px}
 .trackName{font-size:12px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -267,16 +267,26 @@ async function getArtistPreview(artist){
     return null;
   }catch(e){return null}
 }
-function togglePreview(btn,url){
+function togglePreview(btn,audio,externalUrl){
   if(currentAudio){
     currentAudio.pause();
+    currentAudio.currentTime=0;
     if(currentPlayButton) currentPlayButton.textContent="▶";
-    if(currentPlayButton===btn){currentAudio=null;currentPlayButton=null;return}
+    if(currentAudio===audio){currentAudio=null;currentPlayButton=null;return}
   }
-  const audio=new Audio(url);
   currentAudio=audio;currentPlayButton=btn;btn.textContent="❚❚";
-  audio.play().catch(()=>{btn.textContent="▶";currentAudio=null;currentPlayButton=null});
+  const playPromise=audio.play();
+  if(playPromise && typeof playPromise.catch==="function"){
+    playPromise.catch(()=>{
+      btn.textContent="▶";currentAudio=null;currentPlayButton=null;
+      if(externalUrl) window.location.href=externalUrl;
+    });
+  }
   audio.onended=()=>{btn.textContent="▶";currentAudio=null;currentPlayButton=null};
+  audio.onerror=()=>{
+    btn.textContent="▶";currentAudio=null;currentPlayButton=null;
+    if(externalUrl) window.location.href=externalUrl;
+  };
 }
 async function hydratePreviews(){
   const slots=[...document.querySelectorAll("[data-preview-artist]")];
@@ -299,8 +309,10 @@ async function hydratePreviews(){
     }
     if(!track){slot.remove();continue}
     slot.className="listenBox";
-    slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><div class="trackInfo"><div class="trackLabel">Top track · Listen</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
-    slot.querySelector(".playBtn").onclick=()=>togglePreview(slot.querySelector(".playBtn"),track.previewUrl);
+    slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><audio class="nativePreview" preload="none" src="${esc(track.previewUrl)}"></audio><div class="trackInfo"><div class="trackLabel">Top track · Listen</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
+    const playBtn=slot.querySelector(".playBtn");
+    const audio=slot.querySelector(".nativePreview");
+    playBtn.onclick=()=>togglePreview(playBtn,audio,track.trackViewUrl||track.collectionViewUrl||"");
   }
 }
 
