@@ -215,7 +215,7 @@ async function getArtistPhoto(artist){
     if(!res.ok)return null;
     const data=await res.json();
     const found=(data.artists||[]).find(a=>artistLooksRight(artist,a.strArtist));
-    return found ? (found.strArtistWideThumb||found.strArtistThumb||found.strArtistFanart||null) : null;
+    return found ? (found.strArtistWideThumb||found.strArtistThumb||found.strArtistFanart||found.strArtistFanart2||found.strArtistFanart3||found.strArtistFanart4||found.strArtistFanart5||found.strArtistBanner||null) : null;
   }catch(e){return null}
 }
 async function fetchAppleSongs(term,extra=""){
@@ -285,10 +285,19 @@ async function hydratePreviews(){
     const artist=slot.dataset.previewArtist;
     let track=cache.get(artist);
     if(track===undefined){track=await getArtistPreview(artist);cache.set(artist,track||null)}
-    if(!track){slot.remove();continue}
     const art=document.querySelector(`[data-art-artist="${CSS.escape(artist)}"]`);
     const photo=await getArtistPhoto(artist);
-    if(art && photo){art.src=photo;art.classList.add("showArt");}
+    const fallbackArt=track ? (track.artworkUrl100||track.artworkUrl60||"").replace(/100x100bb/,"600x600bb").replace(/60x60bb/,"600x600bb") : null;
+    const chosenArt=photo||fallbackArt;
+    if(art && chosenArt){
+      art.src=chosenArt;
+      art.onload=()=>art.classList.add("showArt");
+      art.onerror=()=>{
+        if(photo && fallbackArt && art.src!==fallbackArt){art.src=fallbackArt;}
+        else art.classList.remove("showArt");
+      };
+    }
+    if(!track){slot.remove();continue}
     slot.className="listenBox";
     slot.innerHTML=`<button class="playBtn" aria-label="Play preview">▶</button><div class="trackInfo"><div class="trackLabel">Top track · Listen</div><div class="trackName">${esc(track.trackName||"Preview")}</div><div class="trackArtist">${esc(track.artistName||artist)}</div></div>`;
     slot.querySelector(".playBtn").onclick=()=>togglePreview(slot.querySelector(".playBtn"),track.previewUrl);
@@ -309,7 +318,7 @@ function findShows(){
  });
  let ranked=[...groups.values()].sort((a,b)=>b.score-a.score||a.shows[0].event_date.localeCompare(b.shows[0].event_date)).slice(0,6);
  quiz.classList.add("hidden");results.classList.remove("hidden");
- results.innerHTML=`<div class="resultTop"><button class="backLink" onclick="restartQuiz()">← Start again</button><div class="stepDots"><span></span><span></span><span class="active"></span></div></div><div class="resultHero"><div class="eyebrow">Your show vibe</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))}</p><div class="locationTag">📍 ${esc(any?"Anywhere":[...selectedCities].join(", "))}</div></div><div class="resultsIntro"><div><div class="eyebrow">Your matches</div><h3>Artists we think you'll love</h3></div><span>${ranked.length} picks</span></div><div class="grid">${ranked.map(g=>`<article class="show"><img class="artistArt" data-art-artist="${esc(g.artist)}" alt="${esc(g.artist)}"><div class="showTop"><span class="score">${g.score}/${selected.size} MATCH</span>${g.shows.length>1?`<span class="showCount">${g.shows.length} SHOWS</span>`:""}</div><h3>${esc(g.artist)}</h3><div class="why">${esc(g.reasons.join(" · "))}</div><div class="listenLoading" data-preview-artist="${esc(g.artist)}">Finding a track…</div><div class="datesWrap">${g.shows.sort((a,b)=>a.event_date.localeCompare(b.event_date)).map(s=>`<div class="dateRow"><div><div class="datePlace">${esc(s.city)}</div><div class="dateWhen">${new Date(s.event_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div></div>${s.ticket_url?`<a class="miniTicket" target="_blank" rel="noopener" href="${esc(s.ticket_url)}">TICKETS →</a>`:""}</div>`).join("")}</div></article>`).join("")||"<div class='empty'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="restartQuiz()">START AGAIN</button>`;
+ results.innerHTML=`<div class="resultTop"><button class="backLink" onclick="restartQuiz()">← Start again</button><div class="stepDots"><span></span><span></span><span class="active"></span></div></div><div class="resultHero"><div class="eyebrow">Your show vibe</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))}</p><div class="locationTag">📍 ${esc(any?"Anywhere":[...selectedCities].join(", "))}</div></div><div class="resultsIntro"><div><div class="eyebrow">Your matches</div><h3>Artists we think you'll love</h3></div><span>${ranked.length} picks</span></div><div class="grid">${ranked.map(g=>`<article class="show" data-artist="${esc(g.artist)}"><img class="artistArt" data-art-artist="${esc(g.artist)}" alt="${esc(g.artist)}"><div class="showTop"><span class="score">${g.score}/${selected.size} MATCH</span>${g.shows.length>1?`<span class="showCount">${g.shows.length} SHOWS</span>`:""}</div><h3>${esc(g.artist)}</h3><div class="why">${esc(g.reasons.join(" · "))}</div><div class="listenLoading" data-preview-artist="${esc(g.artist)}">Finding a track…</div><div class="datesWrap">${g.shows.sort((a,b)=>a.event_date.localeCompare(b.event_date)).map(s=>`<div class="dateRow"><div><div class="datePlace">${esc(s.city)}</div><div class="dateWhen">${new Date(s.event_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div></div>${s.ticket_url?`<a class="miniTicket" target="_blank" rel="noopener" href="${esc(s.ticket_url)}">TICKETS →</a>`:""}</div>`).join("")}</div></article>`).join("")||"<div class='empty'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="restartQuiz()">START AGAIN</button>`;
  hydratePreviews();
  scrollTo({top:0,behavior:"smooth"});
 }
