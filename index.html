@@ -218,21 +218,53 @@ async function getArtistPhoto(artist){
     return found ? (found.strArtistWideThumb||found.strArtistThumb||found.strArtistFanart||null) : null;
   }catch(e){return null}
 }
+async function fetchAppleSongs(term,extra=""){
+  try{
+    const url=`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&country=gb&media=music&entity=song&limit=100${extra}`;
+    const res=await fetch(url);
+    if(!res.ok)return [];
+    const data=await res.json();
+    return data.results||[];
+  }catch(e){return []}
+}
+function previewCandidateScore(artist,x){
+  if(!x.previewUrl||!artistLooksRight(artist,x.artistName))return -999;
+  const q=normArtist(artist), r=normArtist(x.artistName);
+  let score=q===r?100:70;
+  const text=`${x.trackName||""} ${x.collectionName||""}`;
+  if(/karaoke|tribute|made famous by|instrumental version|cover version|commentary/i.test(text))score-=80;
+  if(/sped up|slowed|nightcore/i.test(text))score-=45;
+  if(/remix|mix edit|radio edit/i.test(text))score-=18;
+  if(/live at|live from|live version/i.test(text))score-=12;
+  if(x.trackExplicitness==="notExplicit")score+=1;
+  return score;
+}
 async function getArtistPreview(artist){
   try{
-    const url=`https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&country=gb&media=music&entity=song&attribute=artistTerm&limit=50`;
-    const res=await fetch(url);
-    if(!res.ok) return null;
-    const data=await res.json();
-    const matches=(data.results||[]).filter(x=>x.previewUrl&&artistLooksRight(artist,x.artistName));
-    if(!matches.length)return null;
-
-    // Apple's Search API does not expose a universal "artist top song" metric.
-    // Keep Apple's catalogue relevance order, but prefer standard song releases
-    // over obvious video/karaoke/remix/tribute/noise matches.
-    const bad=/karaoke|tribute|made famous by|instrumental version|cover version|remix|sped up|slowed|live at|commentary/i;
-    const clean=matches.filter(x=>!bad.test(`${x.trackName||""} ${x.collectionName||""}`));
-    return (clean.length?clean:matches)[0];
+    // Try several Apple catalogue searches before giving up. This catches
+    // punctuation, featured-artist and catalogue-indexing differences while
+    // still requiring the returned artist name to match the AMG artist.
+    const searches=[
+      [artist,"&attribute=artistTerm"],
+      [artist,""],
+      [`${artist} song`,""],
+      [`${artist} music`,""]
+    ];
+    const seen=new Map();
+    for(const [term,extra] of searches){
+      const rows=await fetchAppleSongs(term,extra);
+      rows.forEach(x=>{
+        if(!x.previewUrl)return;
+        const key=x.trackId||`${x.artistName}|${x.trackName}|${x.previewUrl}`;
+        if(!seen.has(key))seen.set(key,x);
+      });
+      const confident=[...seen.values()]
+        .map(x=>({x,score:previewCandidateScore(artist,x)}))
+        .filter(v=>v.score>=60)
+        .sort((a,b)=>b.score-a.score);
+      if(confident.length)return confident[0].x;
+    }
+    return null;
   }catch(e){return null}
 }
 function togglePreview(btn,url){
