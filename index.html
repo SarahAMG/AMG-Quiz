@@ -94,7 +94,7 @@ h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:
 .miniTicket{font-size:10px;font-weight:950;color:#0050ff;text-decoration:none;white-space:nowrap}
 .showCount{font-size:10px;font-weight:900;color:#777d88;margin-left:auto}
 
-.youtubeListen{margin:14px 0}.youtubeToggle{width:100%;border:0;border-radius:12px;background:#111;color:#fff;padding:13px 16px;font:inherit;font-weight:800;text-align:left;cursor:pointer}.youtubePlayer{margin-top:10px}.youtubeTitle{font-size:13px;font-weight:800;margin:0 0 7px}.youtubePlayer iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#000}
+.youtubeListen{margin:14px 0}.youtubeToggle{width:100%;border:1px solid #0050ff;border-radius:12px;background:#fff;color:#0050ff;padding:13px 16px;font:inherit;font-weight:800;text-align:left;cursor:pointer;box-shadow:0 3px 10px rgba(0,80,255,.10)}.youtubeToggle .listenIcon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-right:9px;border-radius:50%;background:#0050ff;color:#fff;font-size:12px;vertical-align:middle}.youtubeToggle:hover{background:#f4f7ff}.youtubePlayer{margin-top:10px}.youtubeTitle{font-size:13px;font-weight:800;margin:0 0 7px}.youtubePlayer iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#000}
 </style>
 </head>
 <body>
@@ -221,9 +221,16 @@ async function getArtistPhoto(artist){
   }catch(e){return null}
 }
 const YOUTUBE_VIDEOS={
+  // October 2026 artist video backfill. Only confident artist/video matches are included.
   "james blake":{id:"SLqJgABXlWI",title:"Thrown Around"},
   "the hoosiers":{id:"OeNNfS0ZTnU",title:"Goodbye Mr A"},
-  "paris paloma":{id:"l-E9vn324Qk",title:"Miyazaki"}
+  "paris paloma":{id:"l-E9vn324Qk",title:"Miyazaki"},
+  "band of horses":{id:"cMFWFhTFohk",title:"The Funeral"},
+  "enter shikari":{id:"9ymjcSvEyhk",title:"The Sights"},
+  "the amity affliction":{id:"vu3xGr-lNVI",title:"Pittsburgh"},
+  "the coral":{id:"2XzfXKbYX4s",title:"Let The Music Play"},
+  "beartooth":{id:"z0ao8FCW-Qk",title:"Hated"},
+  "warren zeiders":{id:"PuF6BSFJ-D8",title:"You For A Reason"}
 };
 function getYouTubeVideo(artist){return YOUTUBE_VIDEOS[normArtist(artist)]||null}
 async function hydratePreviews(){
@@ -236,9 +243,9 @@ async function hydratePreviews(){
     if(art && photo){art.src=photo;art.onload=()=>art.classList.add("showArt");art.onerror=()=>art.classList.remove("showArt")}
     if(!video){slot.remove();continue}
     slot.className="youtubeListen";
-    slot.innerHTML=`<button class="youtubeToggle" type="button" aria-expanded="false">▶ Listen</button><div class="youtubePlayer" hidden><div class="youtubeTitle">${esc(video.title)}</div><iframe src="https://www.youtube.com/embed/${video.id}?playsinline=1&rel=0" title="${esc(artist)} — ${esc(video.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+    slot.innerHTML=`<button class="youtubeToggle" type="button" aria-expanded="false"><span class="listenIcon">▶</span>Listen</button><div class="youtubePlayer" hidden><div class="youtubeTitle">${esc(video.title)}</div><iframe src="https://www.youtube.com/embed/${video.id}?playsinline=1&rel=0" title="${esc(artist)} — ${esc(video.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
     const btn=slot.querySelector(".youtubeToggle"), player=slot.querySelector(".youtubePlayer");
-    btn.onclick=()=>{const opening=player.hidden;player.hidden=!opening;btn.setAttribute("aria-expanded",String(opening));btn.textContent=opening?"▲ Hide video":"▶ Listen";if(opening)trackQuizEvent("listen_click",{clicked_artist:artist})};
+    btn.onclick=()=>{const opening=player.hidden;player.hidden=!opening;btn.setAttribute("aria-expanded",String(opening));btn.innerHTML=opening?`<span class="listenIcon">▲</span>Hide video`:`<span class="listenIcon">▶</span>Listen`;if(opening)trackQuizEvent("listen_click",{clicked_artist:artist})};
   }
 }
 
