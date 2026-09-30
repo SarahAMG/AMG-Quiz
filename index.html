@@ -188,7 +188,7 @@ async function trackQuizEvent(eventType, extra={}){
 async function load(){
  try{
   let all=[],from=0;
-  while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,ticket_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all;render()
+  while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,ticket_url,image_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all;try{let cr=await fetch(`${SB}/rest/v1/show_content?select=show_id,image_override_url,youtube_url`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(cr.ok){let cc=await cr.json();contentMap=Object.fromEntries(cc.map(x=>[String(x.show_id),x]));}}catch(e){}render()
  }catch(e){cities.innerHTML="<span>We couldn't load shows right now. Please try again shortly.</span>"}
 }
 function render(){
@@ -210,13 +210,10 @@ function artistLooksRight(query,result){
 }
 
 async function getArtistPhoto(artist){
-  try{
-    const res=await fetch(`https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(artist)}`);
-    if(!res.ok)return null;
-    const data=await res.json();
-    const found=(data.artists||[]).find(a=>artistLooksRight(artist,a.strArtist));
-    return found ? (found.strArtistWideThumb||found.strArtistThumb||found.strArtistFanart||found.strArtistFanart2||found.strArtistFanart3||found.strArtistFanart4||found.strArtistFanart5||found.strArtistBanner||null) : null;
-  }catch(e){return null}
+  const match=shows.find(x=>normArtist(x.artist)===normArtist(artist));
+  if(!match)return null;
+  const c=contentMap[String(match.id)]||{};
+  return c.image_override_url||match.image_url||null;
 }
 function fetchPreviewSongs(term,extra=""){
   // JSONP avoids the WebView fetch/CORS restriction we hit inside Leap.
