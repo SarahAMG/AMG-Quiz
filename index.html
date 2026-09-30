@@ -185,10 +185,12 @@ async function trackQuizEvent(eventType, extra={}){
   }catch(e){console.warn("Analytics event not recorded",e)}
 }
 
+trackQuizEvent("page_view");
+
 async function load(){
  try{
   let all=[],from=0;
-  while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,ticket_url,image_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all;try{let cr=await fetch(`${SB}/rest/v1/show_content?select=show_id,image_override_url,youtube_url`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(cr.ok){let cc=await cr.json();contentMap=Object.fromEntries(cc.map(x=>[String(x.show_id),x]));}}catch(e){}render()
+  while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,ticket_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all;render()
  }catch(e){cities.innerHTML="<span>We couldn't load shows right now. Please try again shortly.</span>"}
 }
 function render(){
@@ -210,10 +212,13 @@ function artistLooksRight(query,result){
 }
 
 async function getArtistPhoto(artist){
-  const match=shows.find(x=>normArtist(x.artist)===normArtist(artist));
-  if(!match)return null;
-  const c=contentMap[String(match.id)]||{};
-  return c.image_override_url||match.image_url||null;
+  try{
+    const res=await fetch(`https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(artist)}`);
+    if(!res.ok)return null;
+    const data=await res.json();
+    const found=(data.artists||[]).find(a=>artistLooksRight(artist,a.strArtist));
+    return found ? (found.strArtistWideThumb||found.strArtistThumb||found.strArtistFanart||found.strArtistFanart2||found.strArtistFanart3||found.strArtistFanart4||found.strArtistFanart5||found.strArtistBanner||null) : null;
+  }catch(e){return null}
 }
 function fetchPreviewSongs(term,extra=""){
   // JSONP avoids the WebView fetch/CORS restriction we hit inside Leap.
@@ -322,6 +327,7 @@ function findShows(){
    g.shows.push(x.s);
  });
  let ranked=[...groups.values()].sort((a,b)=>b.score-a.score||a.shows[0].event_date.localeCompare(b.shows[0].event_date)).slice(0,6);
+ trackQuizEvent("quiz_completed",{result_name:title(),recommended_artists:ranked.map(g=>g.artist)});
  quiz.classList.add("hidden");results.classList.remove("hidden");
  results.innerHTML=`<div class="resultTop"><button class="backLink" onclick="restartQuiz()">← Start again</button><div class="stepDots"><span></span><span></span><span class="active"></span></div></div><div class="resultHero"><div class="eyebrow">Your show vibe</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))}</p><div class="locationTag">📍 ${esc(any?"Anywhere":[...selectedCities].join(", "))}</div></div><div class="resultsIntro"><div><div class="eyebrow">Your matches</div><h3>Artists we think you'll love</h3></div><span>${ranked.length} picks</span></div><div class="grid">${ranked.map(g=>`<article class="show" data-artist="${esc(g.artist)}"><img class="artistArt" data-art-artist="${esc(g.artist)}" alt="${esc(g.artist)}"><div class="showTop"><span class="score">${g.score}/${selected.size} MATCH</span>${g.shows.length>1?`<span class="showCount">${g.shows.length} SHOWS</span>`:""}</div><h3>${esc(g.artist)}</h3><div class="why">${esc(g.reasons.join(" · "))}</div><div class="listenLoading" data-preview-artist="${esc(g.artist)}">Loading listen…</div><div class="datesWrap">${g.shows.sort((a,b)=>a.event_date.localeCompare(b.event_date)).map(s=>`<div class="dateRow"><div><div class="datePlace">${esc(s.venues?.name || s.city || "")}</div><div class="dateCity">${esc(s.city||"")}</div><div class="dateWhen">${new Date(s.event_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div></div>${s.ticket_url?`<a class="miniTicket" target="_blank" rel="noopener" href="${esc(s.ticket_url)}">TICKETS →</a>`:""}</div>`).join("")}</div></article>`).join("")||"<div class='empty'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div><button class="again" onclick="restartQuiz()">START AGAIN</button>`;
  hydratePreviews();
