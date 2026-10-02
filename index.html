@@ -187,6 +187,7 @@ async function trackQuizEvent(eventType, extra={}){
 
 async function load(){
  try{
+  try{const dr=await fetch(`${SB}/rest/v1/halloween_config?show_id=eq.__settings__&select=default_artist_image_url`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(dr.ok){const dj=await dr.json();defaultArtistImage=dj[0]?.default_artist_image_url||""}}catch(e){}
   let all=[],from=0;
   while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,ticket_url,image_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all;render()
  }catch(e){cities.innerHTML="<span>We couldn't load shows right now. Please try again shortly.</span>"}
@@ -211,8 +212,8 @@ function artistLooksRight(query,result){
 
 async function getArtistPhoto(artist){
   const match=shows.find(x=>normArtist(x.artist)===normArtist(artist));
-  if(!match)return null;
-  return match.image_url||null;
+  if(!match)return defaultArtistImage||null;
+  return match.image_url||defaultArtistImage||null;
 }
 function fetchPreviewSongs(term,extra=""){
   // JSONP avoids the WebView fetch/CORS restriction we hit inside Leap.
